@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кулинарный дневник</title>
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #fffaf0;
+    --ink: #302139;
+    --tomato: #b33227;
+    --lavender: #e7dcf6;
+    --green: #416539;
+    --rule: #d6c9d8;
+    color: var(--ink);
+    background: var(--paper);
+    font: 16px/1.5 system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  main { max-width: 1120px; margin: auto; padding: 32px clamp(16px,5vw,64px) 60px; }
+  h1, h2 { font-family: Georgia, serif; font-weight: normal; line-height: 1.08; margin: 0; }
+  h1 { color: var(--tomato); font-size: clamp(2.6rem,8vw,6rem); font-style: italic; letter-spacing: -.055em; }
+  h2 { font-size: clamp(1.7rem,4vw,2.6rem); }
+  h3 { font-size: 1rem; margin: 0; }
+  p { margin: 0; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; background: transparent; border: 1px solid var(--rule); border-radius: 6px; padding: 8px 12px; }
+  button:hover { background: var(--lavender); }
+  :focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+  .primary { background: var(--tomato); border-color: var(--tomato); color: white; }
+  .primary:hover { background: #90251d; }
+  .cover { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 28px; }
+  .cover p { margin-bottom: 6px; }
+  .plate { flex: 0 0 auto; width: clamp(66px,18vw,158px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; transform: rotate(-12deg); background: repeating-conic-gradient(var(--lavender) 0 10deg, var(--paper) 10deg 20deg); border: 2px solid var(--ink); }
+  .plate::before { content: ""; width: 69%; aspect-ratio: 1; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); grid-area: 1/1; }
+  .plate span { grid-area: 1/1; z-index: 1; font-size: clamp(22px,5vw,52px); }
+  .toolbar, .day-heading, .meal-heading, .actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .toolbar { flex-wrap: wrap; padding-block: 12px; border-block: 1px solid var(--rule); }
+  .navigation { display: flex; gap: 8px; }
+  .days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; padding: 12px 0 20px; }
+  .days button { padding: 8px 2px; display: grid; justify-items: center; }
+  .days button[aria-pressed="true"] { background: var(--lavender); border-color: var(--ink); }
+  .days strong { font-family: Georgia,serif; font-size: 1.45rem; }
+  .days small { font-size: .72rem; }
+  .day-heading { flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
+  .meal { padding-block: 12px; border-bottom: 1px solid var(--rule); }
+  .meal-heading button { padding: 4px 10px; }
+  .empty { display: flex; align-items: center; gap: 18px; padding: 18px 0 4px; }
+  .empty .plate { width: 54px; }
+  dialog { width: min(440px,calc(100% - 32px)); max-height: calc(100% - 32px); border: 1px solid var(--ink); border-radius: 10px; padding: 24px; background: var(--paper); color: var(--ink); }
+  dialog::backdrop { background: #30213980; }
+  form, label:not(.check) { display: grid; gap: 6px; }
+  form { gap: 14px; }
+  input:not([type="checkbox"]), select { width: 100%; min-height: 42px; border: 1px solid var(--rule); border-radius: 4px; background: white; padding: 6px 8px; }
+  .actions { flex-wrap: wrap; }
+  .error { color: var(--tomato); }
+  .week-modes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .week-modes [aria-pressed="true"] { background: var(--lavender); border-color: var(--ink); }
+  .collection { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 12px; margin-top: 12px; }
+  .dish-card { display: grid; align-content: start; justify-items: center; gap: 6px; padding: 12px 8px; text-align: center; overflow-wrap: anywhere; border-radius: 10px 10px 3px 3px; }
+  .dish-card strong { max-width: 100%; }
+  .dish-card .plate, .dish-card img { width: 88px; aspect-ratio: 1; }
+  .dish-card img, .recipe-photo { border-radius: 50%; object-fit: cover; border: 2px solid var(--ink); }
+  .recipe-photo { width: clamp(76px, 17vw, 155px); aspect-ratio: 1; }
+  .dish-card .plate span { font-size: 25px; }
+  .album-day { padding-block: 16px; border-bottom: 1px solid var(--rule); }
+  .album-day h3 { font: 1.3rem Georgia, serif; }
+  #album-status { margin-block: 8px; }
+  .chart { display: grid; gap: 6px; margin-top: 12px; }
+  .chart button { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); align-items: center; gap: 8px; text-align: left; }
+  .chart button[aria-pressed="true"] { border-color: var(--ink); background: var(--lavender); }
+  .chart-track { height: 16px; border-radius: 8px; background: #30213914; overflow: hidden; }
+  .chart-fill { display: block; height: 100%; background: var(--tomato); }
+  .photo-preview { display: block; width: 105px; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+  @keyframes serve { from { opacity: .35; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: no-preference) { .dish-card.just-added { animation: serve .24s ease-out; } }
+  .sections { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .sections [aria-pressed="true"] { background: var(--lavender); border-color: var(--ink); }
+  .book-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-bottom: 16px; border-bottom: 2px solid var(--ink); }
+  .book-search { max-width: 360px; margin-block: 16px; }
+  .recipe-row { display: block; width: 100%; text-align: left; padding: 14px; border-radius: 0; border-width: 0 0 1px; overflow-wrap: anywhere; }
+  .recipe-row strong { display: block; font: 1.35rem Georgia, serif; }
+  .recipe-detail { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 24px; margin-top: 16px; overflow-wrap: anywhere; }
+  .recipe-detail .plate { width: clamp(58px, 15vw, 140px); }
+  .recipe-detail h3 { margin-top: 14px; }
+  .recipe-detail ul, .recipe-detail ol { padding-left: 22px; }
+  .recipe-detail .actions { justify-content: flex-start; margin-top: 16px; }
+  #recipe-editor { width: min(640px, calc(100% - 32px)); }
+  #recipe-total, #portion-total { display: block; padding: 10px 12px; background: var(--lavender); }
+  #recipe-total:empty, #portion-total:empty { display: none; }
+  textarea { width: 100%; min-height: 100px; resize: vertical; padding: 8px; border: 1px solid var(--rule); border-radius: 4px; }
+  fieldset { min-width: 0; border: 1px solid var(--rule); }
+  .ingredient-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; margin-bottom: 10px; }
+  @media (max-width: 540px) {
+    .recipe-detail { grid-template-columns: 1fr; gap: 12px; }
+    .ingredient-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ingredient-row label:first-child { grid-column: 1 / -1; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header class="cover">
+    <div><p>Кулинарный дневник</p><h1>Стол недели</h1></div>
+    <div class="plate" aria-hidden="true"><span>🍅</span></div>
+  </header>
+  <nav class="sections" aria-label="Разделы дневника">
+    <button id="show-week" type="button" aria-pressed="true">Неделя</button>
+    <button id="show-book" type="button" aria-pressed="false">Книга рецептов</button>
+    <button id="show-calculator" type="button" aria-haspopup="dialog">Калькулятор</button>
+  </nav>
+  <div id="week-view">
+  <section aria-label="Неделя">
+    <div class="toolbar">
+      <strong id="range"></strong>
+      <span id="week-total"></span>
+      <div class="navigation">
+        <button id="previous" type="button" aria-label="Предыдущая неделя">‹</button>
+        <button id="today" type="button">Сегодня</button>
+        <button id="next" type="button" aria-label="Следующая неделя">›</button>
+      </div>
+    </div>
+    <div class="days" id="days" role="group" aria-label="Дни недели"></div>
+  </section>
+  <div class="week-modes" role="group" aria-label="Вид недели">
+    <button type="button" data-week-mode="table" aria-pressed="true">Стол</button>
+    <button type="button" data-week-mode="chart" aria-pressed="false">График</button>
+    <button type="button" data-week-mode="album" aria-pressed="false">Альбом</button>
+  </div>
+  <section id="chart-panel" aria-labelledby="chart-title" hidden>
+    <h2 id="chart-title">Калории по дням</h2><div id="chart" class="chart"></div>
+  </section>
+  <section id="album-panel" aria-labelledby="album-title" hidden>
+    <h2 id="album-title">Альбом недели</h2><p id="album-status"></p><div id="album"></div>
+  </section>
+  <section id="table-panel" aria-labelledby="day-title">
+    <div class="day-heading">
+      <div><h2 id="day-title" tabindex="-1"></h2><p id="day-total"></p></div>
+      <button class="primary" id="add" type="button">Добавить блюдо</button>
+    </div>
+    <div class="empty" id="empty"><div class="plate" aria-hidden="true"></div><p>В этот день пока нет записей.</p></div>
+    <div id="meals"></div>
+  </section>
+  <p class="error" id="storage-error" role="alert" hidden></p>
+  <p id="undo-row" hidden>Запись удалена. <button id="undo" type="button">Вернуть</button></p>
+  </div>
+  <section id="book-view" aria-labelledby="book-title" hidden>
+    <div class="book-heading">
+      <h2 id="book-title">Книга рецептов</h2>
+      <button id="new-recipe" class="primary" type="button">Новый рецепт</button>
+    </div>
+    <label class="book-search">Поиск по названию<input id="recipe-search" type="search"></label>
+    <p id="book-status" role="status"></p>
+    <div id="recipe-list"></div>
+    <div id="recipe-detail" class="recipe-detail" hidden></div>
+  </section>
+</main>
+<dialog id="diary-editor" aria-labelledby="editor-title">
+  <form id="editor">
+    <h2 id="editor-title"></h2>
+    <label>Название блюда<input name="title" required maxlength="120" autofocus></label>
+    <label>Приём пищи<select name="meal"></select></label>
+    <label>Калорийность съеденного, ккал<input name="kcal" inputmode="decimal" required maxlength="12" placeholder="Например, 340"></label>
+    <label class="check"><input name="estimate" type="checkbox"> Приблизительная оценка</label>
+    <label>Фото блюда (необязательно)<input type="file" accept="image/jpeg,image/png,image/webp" id="entry-photo"></label>
+    <img class="photo-preview" id="entry-preview" alt="Предпросмотр фото блюда" hidden>
+    <button id="entry-photo-remove" type="button" hidden>Убрать фото</button>
+    <p class="error" id="editor-error" role="alert" hidden></p>
+    <div class="actions">
+      <button id="remove" type="button">Удалить</button>
+      <button id="cancel" type="button">Отмена</button>
+      <button class="primary" type="submit">Сохранить</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="recipe-editor" aria-labelledby="recipe-editor-title">
+  <form id="recipe-form">
+    <h2 id="recipe-editor-title">Новый рецепт</h2>
+    <label>Название<input name="title" required maxlength="120"></label>
+    <label>Сколько порций получается<input name="portions" type="number" min="0.01" max="10000" step="0.01" required value="1"></label>
+    <label>Вес готового блюда, г (необязательно)<input name="yieldGrams" type="number" min="0.01" max="1000000" step="0.01"></label>
+    <fieldset>
+      <legend>Ингредиенты</legend>
+      <div id="ingredients"></div>
+      <button id="add-ingredient" type="button">Добавить ингредиент</button>
+    </fieldset>
+    <label id="recipe-steps">Шаги приготовления (каждый с новой строки)<textarea name="steps" maxlength="8000"></textarea></label>
+    <div id="recipe-photo-group">
+      <label>Фото блюда (необязательно)<input type="file" accept="image/jpeg,image/png,image/webp" id="recipe-photo"></label>
+      <img class="photo-preview" id="recipe-preview" alt="Предпросмотр фото блюда" hidden>
+      <button id="recipe-photo-remove" type="button" hidden>Убрать фото</button>
+    </div>
+    <output id="recipe-total"></output>
+    <p class="error" id="recipe-error" role="alert" hidden></p>
+    <div class="actions">
+      <button id="recipe-cancel" type="button">Отмена</button>
+      <button id="save-recipe" class="primary" type="submit">Сохранить рецепт</button>
+      <button id="record-calculation" class="primary" type="submit" hidden>Записать порцию</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="portion-editor" aria-labelledby="portion-title">
+  <form id="portion-form">
+    <h2 id="portion-title">Записать порцию</h2>
+    <label>Дата<input name="date" type="date" required></label>
+    <label>Приём пищи<select name="meal"></select></label>
+    <label id="portion-mode" hidden>Рассчитать по<select name="unit"><option value="portions">Порциям</option><option value="grams">Весу готового блюда</option></select></label>
+    <label id="portion-count">Сколько порций съедено<input name="portions" inputmode="decimal" maxlength="12" required value="1"></label>
+    <label id="portion-weight" hidden>Сколько граммов съедено<input name="grams" inputmode="decimal" maxlength="12" required disabled></label>
+    <output id="portion-total"></output>
+    <p class="error" id="portion-error" role="alert" hidden></p>
+    <div class="actions">
+      <button id="portion-cancel" type="button">Отмена</button>
+      <button class="primary" type="submit">Записать в дневник</button>
+    </div>
+  </form>
+</dialog>
+<script>
+  const meals = ['Завтрак', 'Обед', 'Ужин', 'Перекус'];
+  const storageKey = 'culinary-diary.entries.v1';
+  const get = id => document.getElementById(id);
+  const dialog = get('diary-editor');
+  const form = get('editor');
+  const fields = form.elements;
+  const shortDay = new Intl.DateTimeFormat('ru', {weekday: 'short'});
+  const longDay = new Intl.DateTimeFormat('ru', {weekday: 'long', day: 'numeric', month: 'long'});
+  const rangeDate = new Intl.DateTimeFormat('ru', {day: 'numeric', month: 'short', year: 'numeric'});
+  const number = new Intl.NumberFormat('ru', {maximumFractionDigits: 2});
+  let entries = [];
+  let storageReadable = true;
+  let selected = new Date();
+  let editing = null;
+  let removed = null;
+  let returnFocus = null;
+  let weekMode = 'table';
+  let justAdded = null;
+
+  function dateKey(date) {
+    return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+      .map(value => String(value).padStart(2, '0')).join('-');
+  }
+  function shiftDate(date, days) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 12);
+  }
+  function weekDays(date) {
+    const monday = shiftDate(date, -((date.getDay() + 6) % 7));
+    return Array.from({length: 7}, (_, index) => shiftDate(monday, index));
+  }
+  function calories(records) {
+    const total = totalCents(records);
+    return (records.some(entry => entry.estimate) ? '≈ ' : '') + number.format(total / 100) + ' ккал';
+  }
+  function totalCents(records) {
+    return records.reduce((sum, entry) => sum + entry.cents, 0);
+  }
+  function element(tag, text) {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function button(text, action) {
+    const node = element('button', text);
+    node.type = 'button';
+    node.addEventListener('click', action);
+    return node;
+  }
+  function newId() {
+    return globalThis.crypto?.randomUUID?.() ?? Date.now() + '-' + Math.random();
+  }
+  function photoEditor(prefix, errorId, formNode) {
+    const input = get(prefix + '-photo');
+    const preview = get(prefix + '-preview');
+    const remove = get(prefix + '-photo-remove');
+    const error = get(errorId);
+    let photo = null;
+    let revision = 0;
+    const submitButtons = [...formNode.querySelectorAll('[type="submit"]')];
+    function reset(value) {
+      revision++;
+      photo = value ?? null;
+      input.value = '';
+      if (photo) preview.src = photo;
+      else preview.removeAttribute('src');
+      preview.hidden = remove.hidden = !photo;
+      for (const control of submitButtons) control.disabled = false;
+    }
+    remove.addEventListener('click', () => {
+      reset(null);
+      input.focus();
+    });
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const current = ++revision;
+      error.hidden = true;
+      for (const control of submitButtons) control.disabled = true;
+      try {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 25 * 1024 * 1024) {
+          throw new Error('Unsupported photo');
+        }
+        const image = await createImageBitmap(file);
+        try {
+          const scale = Math.min(1, 800 / Math.max(image.width, image.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          const context = canvas.getContext('2d', {alpha: false});
+          context.fillStyle = '#fffaf0';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          if (current === revision) reset(canvas.toDataURL('image/jpeg', 0.78));
+        } finally {
+          image.close();
+        }
+      } catch {
+        if (current !== revision) return;
+        input.value = '';
+        error.textContent = 'Не удалось открыть фото. Выберите файл JPG, PNG или WebP размером до 25 МБ.';
+        error.hidden = false;
+        for (const control of submitButtons) control.disabled = false;
+      }
+    });
+    return {reset, value: () => photo, pending: () => submitButtons.every(control => control.disabled)};
+  }
+  const entryPhoto = photoEditor('entry', 'editor-error', form);
+
+  function dishImage(photo, emoji) {
+    if (photo) {
+      const image = element('img');
+      image.src = photo;
+      image.alt = '';
+      return image;
+    }
+    const plate = element('div');
+    plate.className = 'plate';
+    plate.setAttribute('aria-hidden', 'true');
+    if (emoji) plate.append(element('span', emoji));
+    return plate;
+  }
+
+  function dishCard(entry) {
+    const amount = entry.grams ? number.format(entry.grams) + ' г'
+      : entry.portions ? number.format(entry.portions) + ' порц.' : '';
+    const card = button('', () => openEditor(entry));
+    card.className = 'dish-card';
+    card.classList.toggle('just-added', entry.id === justAdded);
+    card.append(dishImage(entry.photo, ['🍳', '🥣', '🍲', '🍐'][entry.meal]),
+      element('strong', entry.title), element('small', [amount, calories([entry])].filter(Boolean).join(' · ')));
+    return card;
+  }
+
+  function renderWeekViews(week, weekly) {
+    const groups = week.map(day => weekly.filter(entry => entry.date === dateKey(day)));
+    const maximum = Math.max(1, ...groups.map(totalCents));
+    get('chart').replaceChildren(...week.map((day, index) => {
+      const records = groups[index];
+      const row = button('', () => {
+        selected = day;
+        selectWeekMode('table');
+        get('day-title').focus();
+      });
+      row.setAttribute('aria-pressed', String(dateKey(day) === dateKey(selected)));
+      const track = element('span');
+      track.className = 'chart-track';
+      track.setAttribute('aria-hidden', 'true');
+      const fill = element('span');
+      fill.className = 'chart-fill';
+      fill.style.width = (totalCents(records) / maximum * 100) + '%';
+      track.append(fill);
+      row.append(element('span', longDay.format(day)), track,
+        element('span', records.length ? calories(records) : 'Нет записей'));
+      return row;
+    }));
+    get('album-status').textContent = weekly.length
+      ? 'Дней с записями: ' + groups.filter(group => group.length).length + ' из 7'
+      : 'Добавьте блюдо, чтобы начать альбом этой недели.';
+    get('album').replaceChildren(...week.flatMap((day, index) => {
+      if (!groups[index].length) return [];
+      const page = element('section');
+      page.className = 'album-day';
+      const collection = element('div');
+      collection.className = 'collection';
+      collection.append(...groups[index].map(dishCard));
+      page.append(element('h3', longDay.format(day)), collection);
+      return [page];
+    }));
+  }
+
+  function selectWeekMode(mode) {
+    weekMode = mode;
+    for (const control of document.querySelectorAll('[data-week-mode]')) {
+      const active = control.dataset.weekMode === weekMode;
+      control.setAttribute('aria-pressed', String(active));
+      get(control.dataset.weekMode + '-panel').hidden = !active;
+    }
+    render();
+  }
+  function showStorageError(message) {
+    const status = get(get('portion-editor').open ? 'portion-error' : dialog.open ? 'editor-error' : 'storage-error');
+    status.textContent = message;
+    status.hidden = false;
+  }
+  function persist(next) {
+    try {
+      if (!storageReadable) throw new Error('Storage unavailable');
+      localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      showStorageError('Сохранение недоступно. Проверьте доступ к хранилищу браузера и повторите попытку.');
+      return false;
+    }
+    entries = next;
+    get('storage-error').hidden = true;
+    return true;
+  }
+  function render() {
+    const week = weekDays(selected);
+    const key = dateKey(selected);
+    const weekKeys = new Set(week.map(dateKey));
+    const daily = entries.filter(entry => entry.date === key);
+    const weekly = entries.filter(entry => weekKeys.has(entry.date));
+    get('range').textContent = rangeDate.formatRange(week[0], week[6]);
+    get('week-total').textContent = 'За неделю: ' + (weekly.length ? calories(weekly) : 'нет записей');
+    get('day-title').textContent = longDay.format(selected).replace(/^./u, char => char.toUpperCase());
+    get('day-total').textContent = daily.length ? calories(daily) : '';
+    get('empty').hidden = daily.length > 0;
+    get('undo-row').hidden = removed === null;
+    get('days').replaceChildren(...week.map(day => {
+      const dayKey = dateKey(day);
+      const records = weekly.filter(entry => entry.date === dayKey);
+      const control = button('', () => {
+        selected = day;
+        render();
+        get('days').querySelector('[aria-pressed="true"]').focus();
+      });
+      control.setAttribute('aria-pressed', String(dayKey === key));
+      control.setAttribute('aria-label', longDay.format(day) + ', ' + (records.length ? calories(records) : 'нет записей'));
+      if (dayKey === dateKey(new Date())) control.setAttribute('aria-current', 'date');
+      control.append(element('span', shortDay.format(day)), element('strong', day.getDate()),
+        element('small', records.length ? calories(records) : '—'));
+      return control;
+    }));
+    get('meals').replaceChildren(...meals.map((meal, index) => {
+      const section = element('section');
+      section.className = 'meal';
+      const heading = element('div');
+      heading.className = 'meal-heading';
+      const add = button('Добавить', () => openEditor(null, index));
+      add.setAttribute('aria-label', 'Добавить блюдо: ' + meal.toLowerCase());
+      heading.append(element('h3', meal), add);
+      section.append(heading);
+      const collection = element('div');
+      collection.className = 'collection';
+      collection.append(...daily.filter(item => item.meal === index).map(dishCard));
+      if (collection.childElementCount) section.append(collection);
+      return section;
+    }));
+    renderWeekViews(week, weekly);
+    justAdded = null;
+  }
+  function openEditor(entry, meal = 0) {
+    returnFocus = document.activeElement;
+    editing = entry;
+    form.reset();
+    entryPhoto.reset(entry?.photo);
+    get('editor-error').hidden = true;
+    fields.title.setCustomValidity('');
+    fields.kcal.setCustomValidity('');
+    fields.title.value = entry?.title ?? '';
+    fields.meal.value = entry?.meal ?? meal;
+    fields.kcal.value = entry ? String(entry.cents / 100).replace('.', ',') : '';
+    fields.estimate.checked = entry?.estimate ?? false;
+    get('remove').hidden = !entry;
+    get('editor-title').textContent = entry ? 'Изменить блюдо' : 'Добавить блюдо';
+    dialog.showModal();
+  }
+  for (const [index, meal] of meals.entries()) fields.meal.add(new Option(meal, index));
+  for (const field of [fields.title, fields.kcal]) {
+    field.addEventListener('input', () => field.setCustomValidity(''));
+  }
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    if (entryPhoto.pending()) return;
+    const title = fields.title.value.trim();
+    const raw = fields.kcal.value.trim().replace(',', '.');
+    const kcal = Number(raw);
+    fields.title.setCustomValidity(title ? '' : 'Введите название блюда.');
+    fields.kcal.setCustomValidity(/^\d{1,8}(\.\d{1,2})?$/.test(raw) ? '' : 'Введите неотрицательное число с точностью до двух знаков.');
+    if (!form.reportValidity()) return;
+    const entry = {
+      ...editing,
+      id: editing?.id ?? newId(),
+      date: editing?.date ?? dateKey(selected),
+      title, meal: Number(fields.meal.value), cents: Math.round(kcal * 100), estimate: fields.estimate.checked,
+      photo: entryPhoto.value()
+    };
+    const next = editing ? entries.map(item => item.id === editing.id ? entry : item) : [...entries, entry];
+    if (persist(next)) {
+      if (!editing) justAdded = entry.id;
+      render();
+      dialog.close();
+    }
+  });
+  get('remove').addEventListener('click', () => {
+    if (!editing) return;
+    if (persist(entries.filter(entry => entry.id !== editing.id))) {
+      removed = editing;
+      render();
+      dialog.close();
+    }
+  });
+  get('undo').addEventListener('click', () => {
+    if (removed && persist([...entries, removed])) {
+      removed = null;
+      render();
+      get('add').focus();
+    }
+  });
+  dialog.addEventListener('close', () => {
+    (returnFocus?.isConnected ? returnFocus : document.querySelector('[data-week-mode][aria-pressed="true"]')).focus();
+  });
+  get('cancel').addEventListener('click', () => dialog.close());
+  get('add').addEventListener('click', () => openEditor(null));
+  get('previous').addEventListener('click', () => { selected = shiftDate(selected, -7); render(); });
+  get('next').addEventListener('click', () => { selected = shiftDate(selected, 7); render(); });
+  get('today').addEventListener('click', () => { selected = new Date(); render(); });
+  for (const control of document.querySelectorAll('[data-week-mode]')) {
+    control.addEventListener('click', () => selectWeekMode(control.dataset.weekMode));
+  }
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    if (!Array.isArray(stored)) throw new Error('Invalid entries');
+    entries = stored;
+  } catch {
+    storageReadable = false;
+    showStorageError('Не удалось открыть записи. Проверьте доступ к хранилищу браузера и обновите страницу.');
+  }
+  render();
+</script>
+<script>
+  const recipeKey = 'culinary-diary.recipes.v1';
+  const recipeDialog = get('recipe-editor');
+  const recipeForm = get('recipe-form');
+  const recipeFields = recipeForm.elements;
+  const recipePhoto = photoEditor('recipe', 'recipe-error', recipeForm);
+  const portionDialog = get('portion-editor');
+  const portionForm = get('portion-form');
+  const portionFields = portionForm.elements;
+  let recipes = [];
+  let bookReadable = true;
+  let activeRecipe = null;
+  let recipeDraft = null;
+  let calculatorOpen = false;
+  let portionDish = null;
+
+  function bookView(open) {
+    get('week-view').hidden = open;
+    get('book-view').hidden = !open;
+    get('show-week').setAttribute('aria-pressed', String(!open));
+    get('show-book').setAttribute('aria-pressed', String(open));
+    if (open) renderBook();
+  }
+
+  function recipeKcal(ingredients) {
+    return ingredients.reduce((sum, item) => sum + item.grams * item.kcalPer100 / 100, 0);
+  }
+
+  function recipeSummary(recipe) {
+    const total = recipeKcal(recipe.ingredients);
+    return number.format(recipe.portions) + ' порц. · ' + number.format(total / recipe.portions) + ' ккал на порцию';
+  }
+
+  function renderBook() {
+    const query = get('recipe-search').value.trim().toLocaleLowerCase('ru');
+    const matches = recipes.filter(recipe => recipe.title.toLocaleLowerCase('ru').includes(query));
+    get('book-status').textContent = !bookReadable ? 'Не удалось прочитать сохранённые рецепты.'
+      : matches.length ? '' : query ? 'Рецепты с таким названием не найдены.' : 'Здесь появятся ваши рецепты.';
+    get('recipe-list').replaceChildren(...matches.map(recipe => {
+      const row = button('', () => {
+        activeRecipe = recipe;
+        renderRecipe();
+        get('recipe-detail').querySelector('h3').focus();
+      });
+      row.className = 'recipe-row';
+      row.dataset.recipeId = recipe.id;
+      row.setAttribute('aria-expanded', String(activeRecipe?.id === recipe.id));
+      row.setAttribute('aria-controls', 'recipe-detail');
+      row.append(element('strong', recipe.title), element('span', recipeSummary(recipe)));
+      return row;
+    }));
+    if (activeRecipe && !matches.includes(activeRecipe)) activeRecipe = null;
+    renderRecipe();
+  }
+
+  function renderRecipe() {
+    const detail = get('recipe-detail');
+    detail.hidden = !activeRecipe;
+    detail.replaceChildren();
+    for (const row of get('recipe-list').children) {
+      row.setAttribute('aria-expanded', String(row.dataset.recipeId === activeRecipe?.id));
+    }
+    if (!activeRecipe) return;
+    const recipe = activeRecipe;
+    const plate = dishImage(recipe.photo, '🥄');
+    if (recipe.photo) plate.className = 'recipe-photo';
+    const page = element('div');
+    const title = element('h3', recipe.title);
+    title.tabIndex = -1;
+    const summary = recipeSummary(recipe) + (recipe.yieldGrams ? ' · выход ' + number.format(recipe.yieldGrams) + ' г' : '');
+    const ingredients = element('ul');
+    for (const item of recipe.ingredients) {
+      ingredients.append(element('li', item.name + ' · ' + number.format(item.grams) + ' г · '
+        + number.format(item.kcalPer100) + ' ккал на 100 г'));
+    }
+    page.append(title, element('p', summary), element('h3', 'Ингредиенты'), ingredients);
+    if (recipe.steps.length) {
+      const steps = element('ol');
+      for (const step of recipe.steps) steps.append(element('li', step));
+      page.append(element('h3', 'Приготовление'), steps);
+    }
+    const actions = element('div');
+    actions.className = 'actions';
+    const record = button('Записать порцию', () => openPortion(recipe));
+    record.className = 'primary';
+    actions.append(record, button('Изменить рецепт', () => openRecipe(recipe)));
+    page.append(actions);
+    detail.append(plate, page);
+  }
+
+  function addIngredient(item = {}, focus = false) {
+    const row = element('div');
+    row.className = 'ingredient-row';
+    for (const [name, label, value, minimum, maximum] of [
+      ['name', 'Название', item.name, null, null],
+      ['grams', 'Граммы', item.grams, 0.01, 1000000],
+      ['kcalPer100', 'Ккал на 100 г', item.kcalPer100, 0, 10000]
+    ]) {
+      const wrapper = element('label', label);
+      const field = element('input');
+      field.dataset.field = name;
+      field.required = true;
+      field.value = value ?? '';
+      if (minimum !== null) {
+        field.type = 'number';
+        field.min = minimum;
+        field.max = maximum;
+        field.step = '0.01';
+      } else {
+        field.maxLength = 120;
+      }
+      wrapper.append(field);
+      row.append(wrapper);
+    }
+    const remove = button('Убрать', () => {
+      row.remove();
+      updateRecipeTotal();
+      get('add-ingredient').focus();
+    });
+    remove.setAttribute('aria-label', 'Убрать ингредиент');
+    row.append(remove);
+    get('ingredients').append(row);
+    if (focus) row.querySelector('input').focus();
+  }
+
+  function readIngredients() {
+    return Array.from(get('ingredients').children, row => {
+      const field = name => row.querySelector('[data-field="' + name + '"]');
+      return {name: field('name').value.trim(), grams: field('grams').valueAsNumber, kcalPer100: field('kcalPer100').valueAsNumber};
+    });
+  }
+
+  function updateRecipeTotal() {
+    const ingredients = readIngredients();
+    const total = recipeKcal(ingredients);
+    const portions = recipeFields.portions.valueAsNumber;
+    const ready = ingredients.length && ingredients.every(item => item.name)
+      && [...get('ingredients').querySelectorAll('input'), recipeFields.portions].every(field => field.validity.valid);
+    const yieldGrams = recipeFields.yieldGrams.valueAsNumber;
+    let summary = ready ? number.format(total) + ' ккал во всём блюде · '
+      + number.format(total / portions) + ' ккал на порцию' : '';
+    if (ready && yieldGrams > 0 && recipeFields.yieldGrams.validity.valid) {
+      summary += ' · ' + number.format(total / yieldGrams * 100) + ' ккал на 100 г';
+    }
+    get('recipe-total').textContent = summary;
+  }
+
+  function openRecipe(recipe = null, calculator = false) {
+    recipeDraft = recipe;
+    calculatorOpen = calculator;
+    recipeForm.reset();
+    recipePhoto.reset(recipe?.photo);
+    get('recipe-error').hidden = true;
+    get('recipe-editor-title').textContent = calculator ? 'Калькулятор калорий' : recipe ? 'Изменить рецепт' : 'Новый рецепт';
+    get('recipe-steps').hidden = calculator;
+    get('record-calculation').hidden = !calculator;
+    get('save-recipe').textContent = calculator ? 'Сохранить как рецепт' : 'Сохранить рецепт';
+    get('save-recipe').classList.toggle('primary', !calculator);
+    get('recipe-cancel').textContent = calculator ? 'Закрыть' : 'Отмена';
+    recipeFields.title.value = recipe?.title ?? '';
+    recipeFields.portions.value = recipe?.portions ?? 1;
+    recipeFields.yieldGrams.value = recipe?.yieldGrams ?? '';
+    recipeFields.steps.value = recipe?.steps.join('\n') ?? '';
+    get('ingredients').replaceChildren();
+    for (const item of recipe?.ingredients ?? [{}]) addIngredient(item);
+    updateRecipeTotal();
+    recipeDialog.showModal();
+  }
+
+  function recipeError(message) {
+    get('recipe-error').textContent = message;
+    get('recipe-error').hidden = false;
+  }
+
+  recipeForm.addEventListener('submit', event => {
+    event.preventDefault();
+    if (recipePhoto.pending()) return;
+    const title = recipeFields.title.value.trim();
+    const ingredients = readIngredients();
+    if (!title || !ingredients.length || ingredients.some(item => !item.name)) {
+      recipeError('Укажите название рецепта и названия всех ингредиентов.');
+      return;
+    }
+    const dish = {
+      title, ingredients,
+      portions: recipeFields.portions.valueAsNumber,
+      yieldGrams: recipeFields.yieldGrams.valueAsNumber || null,
+      photo: recipePhoto.value(),
+      steps: recipeFields.steps.value.split(/\r?\n/).map(step => step.trim()).filter(Boolean)
+    };
+    if (calculatorOpen && event.submitter === get('record-calculation')) {
+      get('recipe-error').hidden = true;
+      openPortion(dish);
+      return;
+    }
+    const recipe = {id: recipeDraft?.id ?? newId(), ...dish};
+    const next = recipeDraft ? recipes.map(item => item.id === recipe.id ? recipe : item) : [...recipes, recipe];
+    try {
+      if (!bookReadable) throw new Error('Storage unavailable');
+      localStorage.setItem(recipeKey, JSON.stringify(next));
+    } catch {
+      recipeError('Не удалось сохранить рецепт. Проверьте хранилище браузера и повторите попытку.');
+      return;
+    }
+    recipes = next;
+    activeRecipe = recipe;
+    get('recipe-search').value = '';
+    recipeDialog.close();
+    bookView(true);
+    get('recipe-detail').querySelector('h3').focus();
+  });
+
+  function portionAmount() {
+    const byWeight = portionFields.unit.value === 'grams';
+    const field = byWeight ? portionFields.grams : portionFields.portions;
+    const kcalPerUnit = recipeKcal(portionDish.ingredients) / (byWeight ? portionDish.yieldGrams : portionDish.portions);
+    const raw = field.value.trim().replace(',', '.');
+    const quantity = Number(raw);
+    const valid = /^\d+(\.\d{1,2})?$/.test(raw) && quantity > 0 && quantity <= (byWeight ? 1000000 : 10000);
+    return {byWeight, field, quantity, valid, kcalPerUnit, kcal: kcalPerUnit * quantity};
+  }
+
+  function updatePortionTotal() {
+    const {byWeight, field, valid, kcal} = portionAmount();
+    get('portion-weight').hidden = !byWeight;
+    get('portion-count').hidden = byWeight;
+    portionFields.grams.disabled = !byWeight;
+    portionFields.portions.disabled = byWeight;
+    field.setCustomValidity(valid || !field.value ? '' : 'Введите положительное количество с точностью до двух знаков.');
+    get('portion-total').textContent = valid ? number.format(kcal) + ' ккал' : '';
+  }
+
+  function openPortion(dish) {
+    portionDish = dish;
+    portionForm.reset();
+    get('portion-error').hidden = true;
+    get('portion-mode').hidden = !dish.yieldGrams;
+    portionFields.unit.disabled = !dish.yieldGrams;
+    portionFields.date.value = dateKey(selected);
+    updatePortionTotal();
+    portionDialog.showModal();
+  }
+
+  portionForm.addEventListener('submit', event => {
+    event.preventDefault();
+    updatePortionTotal();
+    if (!portionForm.reportValidity()) return;
+    const {byWeight, quantity, kcalPerUnit, kcal} = portionAmount();
+    const entry = {
+      id: newId(), date: portionFields.date.value, meal: Number(portionFields.meal.value),
+      title: portionDish.title, recipeId: portionDish.id ?? null,
+      photo: portionDish.photo ?? null,
+      ...(byWeight ? {grams: quantity, kcalPerGram: kcalPerUnit} : {portions: quantity, kcalPerPortion: kcalPerUnit}),
+      cents: Math.round(kcal * 100), estimate: false
+    };
+    if (!persist([...entries, entry])) return;
+    const [year, month, day] = entry.date.split('-').map(Number);
+    selected = new Date(0);
+    selected.setFullYear(year, month - 1, day);
+    selected.setHours(12, 0, 0, 0);
+    justAdded = entry.id;
+    selectWeekMode('table');
+    portionDialog.close();
+    if (calculatorOpen && recipeDialog.open) recipeDialog.close();
+    bookView(false);
+    get('add').focus();
+  });
+
+  for (const [index, meal] of meals.entries()) portionFields.meal.add(new Option(meal, index));
+  get('show-week').addEventListener('click', () => bookView(false));
+  get('show-book').addEventListener('click', () => bookView(true));
+  get('recipe-search').addEventListener('input', renderBook);
+  get('new-recipe').addEventListener('click', () => openRecipe());
+  get('show-calculator').addEventListener('click', () => openRecipe(null, true));
+  get('add-ingredient').addEventListener('click', () => addIngredient({}, true));
+  get('recipe-cancel').addEventListener('click', () => recipeDialog.close());
+  get('portion-cancel').addEventListener('click', () => portionDialog.close());
+  recipeForm.addEventListener('input', updateRecipeTotal);
+  for (const field of [portionFields.portions, portionFields.grams, portionFields.unit]) {
+    field.addEventListener('input', updatePortionTotal);
+  }
+  try {
+    const stored = JSON.parse(localStorage.getItem(recipeKey) ?? '[]');
+    if (!Array.isArray(stored)) throw new Error('Invalid recipes');
+    recipes = stored;
+  } catch {
+    bookReadable = false;
+  }
+</script>
+</body>
+</html>
